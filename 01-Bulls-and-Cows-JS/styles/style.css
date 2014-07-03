@@ -1,0 +1,102 @@
+@import url(http://fonts.googleapis.com/css?family=Lato:400,700);
+
+body, div, ul, li, img, p, input, button {
+    padding: 0;
+    margin: 0;
+}
+
+.clearfix {
+    clear: both;
+}
+
+div#bovine div.images {
+    height: 220px;
+    margin-top: 25px;
+}
+
+div#bovine div.images {
+    width: 50%;
+    float: left;
+}
+
+div#bovine div.images ul.images {
+    list-style-type: none;
+    text-align: center;
+}
+
+div#bovine div.images ul.images li {
+    display: inline;
+    margin-left: -150px;
+}
+
+div#settings {
+    width: 60%;
+    height: 400px;
+    margin: 5% auto;
+    position: relative;
+    border: 1px solid black;
+    border-radius: 20px;
+    font: 100% 'Lato', sans-serif;
+    text-align: center;
+}
+
+div#settings div.codesSelect {
+    margin: 0 auto;
+    position: absolute;
+    top: 25%;
+    left: 0;
+    right: 0;
+}
+
+div#settings div.codesSelect p {
+    padding-bottom: 15px;
+}
+
+div#settings button.play {
+    width: 20%;
+    margin: 0 auto;
+    position: absolute;
+    border: 5px solid black;
+    border-radius: 10px;
+    bottom: 10%;
+    left: 0;
+    right: 0;
+}
+
+div#settings button.play:hover {
+    background: dimgray;
+}
+
+div#input {
+    width: 60%;
+    height: 400px;
+    margin: 5% auto;
+    position: relative;
+    display: none;
+    border: 1px solid black;
+    border-radius: 20px;
+    font: 100% 'Lato', sans-serif;
+    text-align: center;
+}
+
+div#input input.guess {
+    margin: 10px auto 0px;
+}
+
+div#input div.history {
+    width: 99%;
+    height: 80%;
+    margin: 25px auto;
+    overflow: auto;
+    text-align: left;
+}
+
+img.win {
+    margin: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+}

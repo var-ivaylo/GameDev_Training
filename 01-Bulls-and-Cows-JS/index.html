@@ -2,66 +2,64 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Bulls
-    and
-    Cows</title>
+    <title>Bulls and Cows</title>
 
-    <link rel="stylesheet" type="text/css" href="styles/style.css"/>
+    <link rel="stylesheet" type="text/css" href="styles/style.css" />
 
-    <script type="text/javascript" src="scripts/libs/jquery-2.1.1.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script type="text/javascript" src="scripts/bullsandcows.js"></script>
     <script type="text/javascript" src="scripts/script.js"></script>
 </head>
 <body>
-<div id="container">
-    <div id="bovine">
-        <div class="images">
-            <ul class="images bulls">
-                <li><img src="images/bull.png"/></li>
-                <li><img src="images/bull.png"/></li>
-                <li><img src="images/bull.png"/></li>
-                <li><img src="images/bull.png"/></li>
-                <li><img src="images/bull.png"/></li>
-            </ul>
+    <div id="container">
+        <div id="bovine">
+            <div class="images">
+                <ul class="images bulls">
+                    <li><img src="images/bull.png" /></li>
+                    <li><img src="images/bull.png" /></li>
+                    <li><img src="images/bull.png" /></li>
+                    <li><img src="images/bull.png" /></li>
+                    <li><img src="images/bull.png" /></li>
+                </ul>
+            </div>
+            <div class="images">
+                <ul class="images cows">
+                    <li><img src="images/cow.png" /></li>
+                    <li><img src="images/cow.png" /></li>
+                    <li><img src="images/cow.png" /></li>
+                    <li><img src="images/cow.png" /></li>
+                    <li><img src="images/cow.png" /></li>
+                </ul>
+            </div>
         </div>
-        <div class="images">
-            <ul class="images cows">
-                <li><img src="images/cow.png"/></li>
-                <li><img src="images/cow.png"/></li>
-                <li><img src="images/cow.png"/></li>
-                <li><img src="images/cow.png"/></li>
-                <li><img src="images/cow.png"/></li>
-            </ul>
+
+        <div class="clearfix"></div>
+
+        <div id="settings">
+            <div class="codesSelect">
+                <p>Settings</p>
+                <select class="codes">
+                    <option value="3">3 codes</option>
+                    <option value="4" selected="selected">4 codes</option>
+                    <option value="5">5 codes</option>
+                </select>
+
+                <input class="wordVersion" type="checkbox">Word Version<br>
+            </div>
+
+            <button class="play" type="button">PLAY</button>
         </div>
+
+        <div id="input">
+            <input class="guess" type="text" placeholder="enter your guess" autofocus="autofocus" />
+
+            <hr />
+
+            <div class="history">
+            </div>
+        </div>
+
+        <img class="win" src="images/win.png" />
     </div>
-
-    <div class="clearfix"></div>
-
-    <div id="settings">
-        <div class="codesSelect">
-            <p>Settings</p>
-            <select class="codes">
-                <option value="3">3 codes</option>
-                <option value="4" selected="selected">4 codes</option>
-                <option value="5">5 codes</option>
-            </select>
-
-            <input class="wordVersion" type="checkbox">Word Version<br>
-        </div>
-
-        <button class="play" type="button">PLAY</button>
-    </div>
-
-    <div id="input">
-        <input class="guess" type="text" placeholder="enter your guess" autofocus="autofocus"/>
-
-        <hr/>
-
-        <div class="history">
-        </div>
-    </div>
-
-    <img class="win" src="images/win.png"/>
-</div>
 </body>
 </html>

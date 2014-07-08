@@ -4,4 +4,4 @@
 
 2. **Implement the game Bulls and Cows using SDL.**
   * Rewrite the game in C++.
-  * ...
+  * Use SDL.

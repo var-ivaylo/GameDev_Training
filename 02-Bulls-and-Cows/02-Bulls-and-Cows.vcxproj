@@ -38,7 +38,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir)\dev_libs\SDL2-2.0.3\include;$(SolutionDir)\dev_libs\SDL2_image-2.0.0\include;$(SolutionDir)\dev_libs\SDL2_ttf-2.0.12\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\dev_libs\SDL2-2.0.3\lib\x86;$(SolutionDir)\dev_libs\SDL2_image-2.0.0\lib\x86;$(SolutionDir)\dev_libs\SDL2_ttf-2.0.12\lib\x86;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -48,6 +51,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -68,6 +72,7 @@
     <ClInclude Include="Game.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BullsAndCows.cpp" />
     <ClCompile Include="Game.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

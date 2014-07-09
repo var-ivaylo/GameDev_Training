@@ -1,8 +1,6 @@
 #include "Game.h"
 
-#include "algorithm"
-#include "iostream"
-#include "time.h"
+#include <algorithm>
 
 const std::string Game::DIGITS = "0123456789";
 const std::string Game::CHARACTERS = "abcdefghijklmnopqrstuvwxyz";
@@ -11,8 +9,6 @@ Game::Game(int length, bool wordVersion)
 {
 	this->_codes = wordVersion ? Game::CHARACTERS : Game::DIGITS;
 	this->_secret = GenerateSecret(length);
-
-	// std::cout << this->_secret << std::endl;
 }
 
 std::string Game::GenerateSecret(int length)
@@ -36,10 +32,11 @@ bool Game::IsGuessCorrect(std::string guess)
 
 bool Game::CountBovine(std::string guess, int &bulls, int &cows)
 {
+	bulls = 0;
+	cows = 0;
+
 	if (!this->IsGuessCorrect(guess))
 	{
-		bulls = -1;
-		cows = -1;
 		return false;
 	}
 
@@ -62,21 +59,4 @@ bool Game::CountBovine(std::string guess, int &bulls, int &cows)
 	}
 
 	return false;
-}
-
-int main()
-{
-	srand(time(NULL));
-	Game game(4, false);
-	std::string guess;
-	int bulls = 0, cows = 0;
-	std::getline(std::cin, guess);
-	while (!game.CountBovine(guess, bulls, cows))
-	{
-		std::cout << bulls << ":" << cows << std::endl;
-		bulls = 0;
-		cows = 0;
-		std::getline(std::cin, guess);
-	}
-	std::cout << "won" << std::endl;
 }

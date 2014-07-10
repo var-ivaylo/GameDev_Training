@@ -414,12 +414,12 @@ int main(int argc, char* args[])
 						SDL_RenderSetViewport(gRenderer, &viewports[INPUT_VIEWPORT]);
 						currentGuessTexture.Render(inputGuessPosX, inputGuessPosY);
 
-						// fix arrow
-						int offset = inputGuessPosX + digitsTextTextures[guess[0] - '0'].getWidth() / 2 -ARROW_DIMENSION / 2;
-						for (int i = 1; i <= guessPos; ++i)
+						int offset = inputGuessPosX;
+						for (int i = 0; i < guessPos; ++i)
 						{
-							offset = offset + digitsTextTextures[guess[i] - '0'].getWidth() / 3 + ARROW_DIMENSION / 2;
+							offset = offset + digitsTextTextures[guess[i] - '0'].getWidth();
 						}
+						offset = offset + digitsTextTextures[guess[guessPos] - '0'].getWidth() / 2 - ARROW_DIMENSION / 2;
 
 						bullsAndCowsTexture.Render(offset, inputGuessPosY - ARROW_DIMENSION, &arrow);
 

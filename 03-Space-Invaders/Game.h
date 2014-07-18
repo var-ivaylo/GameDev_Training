@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Player.h"
+#include "Projectile.h"
 #include "Timer.h"
 #include "vector"
 
@@ -30,6 +31,11 @@ private:
 	int invadersDirection; // 1: right; -1: left;
 	bool movedDown;
 
+	bool updateInvoked;
+
+	SDL_Rect projectileSrcRect;
+	std::vector<Projectile> projectiles;
+
 	Timer timer;
 
 	void CheckGridStatus();
@@ -55,6 +61,11 @@ public:
 
 	static const int PLAYER_SPEED;
 
+	static const int PROJECTILE_WIDTH;
+	static const int PROJECTILE_HEIGHT;
+
+	static const int PROJECTILE_SPEED;
+
 	Game();
 	~Game();
 
@@ -67,6 +78,12 @@ public:
 	void MoveRight();
 	void MoveLeft();
 
-	void Update(bool invoked = false);
+	void PlayerShoot();
+	void InvaderShoot(Invader *shooter);
+
+	bool AreColliding(Projectile *objA, Invader *objB);
+	bool AreColliding(Projectile *objA, Player *objB);
+
+	void Update();
 	void Draw();
 };

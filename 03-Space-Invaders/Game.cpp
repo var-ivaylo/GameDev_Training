@@ -27,6 +27,11 @@ const int Game::PLAYER_HEIGHT = 32;
 
 const int Game::PLAYER_SPEED = 20;
 
+const int Game::PROJECTILE_WIDTH = 4;
+const int Game::PROJECTILE_HEIGHT = 20;
+
+const int Game::PROJECTILE_SPEED = 5;
+
 Game::Game()
 {
 	scoreInfoViewport = { 0, 0, Game::SCREEN_WIDTH / 2, 96 };
@@ -40,6 +45,7 @@ Game::Game()
 
 	this->invadersDirection = 1;
 	this->movedDown = false;
+	this->updateInvoked = false;
 }
 
 Game::~Game()
@@ -75,7 +81,7 @@ void Game::CheckGridStatus()
 		}
 		if (removeLast)
 		{
-			this->invadersGrid.erase(this->invadersGrid.end());
+			this->invadersGrid.erase(this->invadersGrid.end() - 1);
 		}
 
 		if (this->invadersGrid.back()[0].getX() + this->invadersGrid.back()[0].getWidth() >= this->invadersViewport.w)
@@ -218,6 +224,8 @@ void Game::LoadScreen()
 
 	this->livesText.LoadFromRenderedText("LIVES: " + std::to_string(this->player.getLives()), this->g_Font);
 	this->livesTextObj = GameObject(&this->livesText, &this->playerLivesViewport, NULL, Game::GAME_INFO_VIEWPORT_ITEMS_SPACE_WIDTH, (this->scoreInfoViewport.h - this->scoreText.getHeight()) / 2);
+
+	this->projectileSrcRect = { Game::PLAYER_WIDTH, Game::INVADER_HEIGHT, Game::PROJECTILE_WIDTH, Game::PROJECTILE_HEIGHT };
 }
 
 void Game::MoveRight()
@@ -230,9 +238,129 @@ void Game::MoveLeft()
 	this->player.setX(std::max(this->playerViewport.x, this->player.getX() - Game::PLAYER_SPEED));
 }
 
-void Game::Update(bool invoked)
+void Game::PlayerShoot()
 {
-	if (this->timer.getTicks() > 750)
+	this->projectiles.push_back(Projectile(&this->g_Texture, &this->projectileSrcRect, true, this->player.getX() + this->player.getWidth() / 2, this->playerViewport.y));
+}
+
+void Game::InvaderShoot(Invader *shooter)
+{
+	this->projectiles.push_back(Projectile(&this->g_Texture, &this->projectileSrcRect, false, shooter->getX() + shooter->getWidth() / 2 + this->invadersViewport.x, this->invadersViewport.y + shooter->getY()));
+}
+
+bool Game::AreColliding(Projectile *objA, Invader *objB)
+{
+	int leftA, leftB,
+		rightA, rightB,
+		topA, topB,
+		bottomA, bottomB;
+
+	leftA = objA->getX();
+	rightA = objA->getX() + objA->getWidth();
+	topA = objA->getY();
+	bottomA = objA->getY() + objA->getHeight();
+
+	leftB = this->invadersViewport.x + objB->getX();
+	rightB = this->invadersViewport.x+ objB->getX() + objB->getWidth();
+	topB = this->invadersViewport.y + objB->getY();
+	bottomB = this->invadersViewport.y + objB->getY() + objB->getHeight();
+
+	if (bottomA <= topB)
+	{
+		return false;
+	}
+
+	if (topA >= bottomB)
+	{
+		return false;
+	}
+
+	if (rightA <= leftB)
+	{
+		return false;
+	}
+
+	if (leftA >= rightB)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool Game::AreColliding(Projectile *objA, Player *objB)
+{
+	int leftA, leftB,
+		rightA, rightB,
+		topA, topB,
+		bottomA, bottomB;
+
+	leftA = objA->getX();
+	rightA = objA->getX() + objA->getWidth();
+	topA = objA->getY();
+	bottomA = objA->getY() + objA->getHeight();
+
+	leftB = objB->getX();
+	rightB = objB->getX() + objB->getWidth();
+	topB = this->playerViewport.y + objB->getY();
+	bottomB = this->playerViewport.y + objB->getY() + objB->getHeight();
+
+	if (bottomA <= topB)
+	{
+		return false;
+	}
+
+	if (topA >= bottomB)
+	{
+		return false;
+	}
+
+	if (rightA <= leftB)
+	{
+		return false;
+	}
+
+	if (leftA >= rightB)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void Game::Update()
+{
+	for (size_t col = 0; col < this->invadersGrid.size(); ++col)
+	{
+		for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
+		{
+			if (this->invadersGrid[col][row].isDead())
+			{
+				continue;
+			}
+
+			for (int i = 0, size = this->projectiles.size(); i < size; ++i)
+			{
+				if (!this->projectiles[i].isFriendly())
+				{
+					continue;
+				}
+
+				if (this->AreColliding(&this->projectiles[i], &this->invadersGrid[col][row]))
+				{
+					this->player.KillInvader(&invadersGrid[col][row]);
+					this->updateInvoked = true;
+
+					this->projectiles.erase(this->projectiles.begin() + i);
+					--size;
+					--i;
+					continue;
+				}
+			}
+		}
+	}
+
+	if (this->timer.getTicks() > 500)
 	{
 		this->CheckGridStatus();
 		if (!this->movedDown)
@@ -241,7 +369,11 @@ void Game::Update(bool invoked)
 			{
 				for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
 				{
-					this->invadersGrid[col][row].setX(this->invadersGrid[col][row].getX() + this->invadersDirection * Game::INVADER_WIDTH / 2);
+					this->invadersGrid[col][row].setX(this->invadersGrid[col][row].getX() + this->invadersDirection * (Game::INVADER_WIDTH - Game::GAME_INFO_VIEWPORT_ITEMS_SPACE_WIDTH) / 2);
+					if (rand() % 100 < 1) // 1% chance for invader to shoot;
+					{
+						this->InvaderShoot(&this->invadersGrid[col][row]);
+					}
 				}
 			}
 		}
@@ -252,10 +384,36 @@ void Game::Update(bool invoked)
 		this->timer.Start();
 	}
 
-	if (invoked)
+	if (this->updateInvoked)
 	{
 		this->scoreText.LoadFromRenderedText("SCORE: " + std::to_string(this->player.getPoints()), this->g_Font);
 		this->livesText.LoadFromRenderedText("LIVES: " + std::to_string(this->player.getLives()), this->g_Font);
+
+		this->updateInvoked = false;
+	}
+	
+	for (int i = 0, size = this->projectiles.size(); i < size; ++i)
+	{
+		if (this->projectiles[i].getY() <= 0 || this->projectiles[i].getY() >= Game::SCREEN_HEIGHT)
+		{
+			this->projectiles.erase(this->projectiles.begin() + i);
+			--size;
+			--i;
+			continue;
+		}
+
+		if (!this->projectiles[i].isFriendly() && this->AreColliding(&this->projectiles[i], &this->player))
+		{
+			this->player.Die();
+			this->updateInvoked = true;
+
+			this->projectiles.erase(this->projectiles.begin() + i);
+			--size;
+			--i;
+			continue;
+		}
+
+		this->projectiles[i].Move(Game::PROJECTILE_SPEED);
 	}
 
 	this->Draw();
@@ -263,7 +421,6 @@ void Game::Update(bool invoked)
 
 void Game::Draw()
 {
-
 	SDL_RenderClear(this->g_Renderer);
 
 	this->scoreTextObj.Draw();
@@ -283,6 +440,11 @@ void Game::Draw()
 	}
 
 	this->player.Draw();
+
+	for (int i = 0; i < this->projectiles.size(); ++i)
+	{
+		this->projectiles[i].Draw();
+	}
 
 	SDL_RenderPresent(this->g_Renderer);
 }
@@ -328,6 +490,10 @@ int main(int argc, char *argv[])
 
 				case SDLK_RIGHT:
 					game.MoveRight();
+					break;
+
+				case SDLK_SPACE:
+					game.PlayerShoot();
 					break;
 				}
 			}

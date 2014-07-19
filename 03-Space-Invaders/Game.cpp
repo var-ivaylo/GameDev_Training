@@ -395,22 +395,22 @@ bool Game::Update()
 		return true;
 	}
 
-	for (int row = this->invadersGrid.front().size() - 1; row >= 0; --row)
-	{
-		if (!this->invadersGrid.front()[row].isDead()
-			&& (this->invadersViewport.y + this->invadersGrid.front()[row].getY() + Game::INVADER_HEIGHT >= this->playerViewport.y))
-		{
-			while (this->player.getLives() > 0)
-			{
-				Mix_PlayChannel(-1, this->playerHit, 0);
-				this->player.Die();
-			}
-		}
-
-	}
-
 	for (size_t col = 0; col < this->invadersGrid.size(); ++col)
 	{
+		for (int row = this->invadersGrid[col].size() - 1; row >= 0; --row)
+		{
+			if (!this->invadersGrid[col][row].isDead()
+				&& (this->invadersViewport.y + this->invadersGrid[col][row].getY() + Game::INVADER_HEIGHT >= this->playerViewport.y))
+			{
+				while (this->player.getLives() > 0)
+				{
+					Mix_PlayChannel(-1, this->playerHit, 0);
+					this->player.Die();
+				}
+			}
+
+		}
+
 		for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
 		{
 			if (this->invadersGrid[col][row].isDead())

@@ -5,8 +5,6 @@
 #include <time.h>
 #include <algorithm>
 
-//#include <vld.h>
-
 const int Game::SCREEN_WIDTH = 1024;
 const int Game::SCREEN_HEIGHT = 768;
 
@@ -39,6 +37,12 @@ Game::Game()
 	invadersViewport = { 48, 144, Game::SCREEN_WIDTH - 96, Game::SCREEN_HEIGHT - 144 };
 	playerViewport = { 0, Game::SCREEN_HEIGHT - 48, Game::SCREEN_WIDTH, 48 };
 
+	this->invaderShoot = NULL;
+	this->invaderHit = NULL;
+	this->invadersMove = NULL;
+	this->playerShoot = NULL;
+	this->playerHit = NULL;
+
 	this->g_Window = NULL;
 	this->g_Renderer = NULL;
 	this->g_Font = NULL;
@@ -55,12 +59,24 @@ Game::~Game()
 	TTF_CloseFont(this->g_Font);
 	this->g_Font = NULL;
 
+	Mix_FreeChunk(this->invaderShoot);
+	this->invaderShoot = NULL;
+	Mix_FreeChunk(this->invaderHit);
+	this->invaderHit = NULL;
+	Mix_FreeChunk(this->invadersMove);
+	this->invadersMove = NULL;
+	Mix_FreeChunk(this->playerShoot);
+	this->playerShoot = NULL;
+	Mix_FreeChunk(this->playerHit);
+	this->playerHit = NULL;
+
 	SDL_DestroyRenderer(this->g_Renderer);
 	this->g_Renderer = NULL;
 
 	SDL_DestroyWindow(this->g_Window);
 	this->g_Window = NULL;
 
+	Mix_Quit();
 	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
@@ -68,22 +84,33 @@ Game::~Game()
 
 void Game::CheckGridStatus()
 {
-	if (this->invadersDirection > 0) // right
+	for (size_t col = 0, size = this->invadersGrid.size(); col < size; ++col)
 	{
-		bool removeLast = true;;
-		for (size_t row = 0; row < this->invadersGrid.back().size(); ++row)
+		bool remove = true;
+		for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
 		{
-			if (!this->invadersGrid.back()[row].isDead())
+			if (!this->invadersGrid[col][row].isDead())
 			{
-				removeLast = false;
+				remove = false;
 				break;
 			}
 		}
-		if (removeLast)
+		if (remove)
 		{
-			this->invadersGrid.erase(this->invadersGrid.end() - 1);
+			this->invadersGrid.erase(this->invadersGrid.begin() + col);
+			--size;
+			--col;
+			continue;
 		}
+	}
 
+	if (this->invadersGrid.empty())
+	{
+		return;
+	}
+
+	if (this->invadersDirection > 0) // right
+	{
 		if (this->invadersGrid.back()[0].getX() + this->invadersGrid.back()[0].getWidth() >= this->invadersViewport.w)
 		{
 			this->invadersDirection = -1;
@@ -99,20 +126,6 @@ void Game::CheckGridStatus()
 	}
 	else if (this->invadersDirection < 0) // left
 	{
-		bool removeFirst = true;;
-		for (size_t row = 0; row < this->invadersGrid.front().size(); ++row)
-		{
-			if (!this->invadersGrid.front()[row].isDead())
-			{
-				removeFirst = false;
-				break;
-			}
-		}
-		if (removeFirst)
-		{
-			this->invadersGrid.erase(this->invadersGrid.begin());
-		}
-
 		if (this->invadersGrid.front()[0].getX() <= 0)
 		{
 			this->invadersDirection = 1;
@@ -126,6 +139,34 @@ void Game::CheckGridStatus()
 			this->movedDown = true;
 		}
 	}
+}
+
+void Game::VictoryScreen()
+{
+	SDL_RenderClear(this->g_Renderer);
+
+	this->resultText.setRenderer(this->g_Renderer);
+	this->resultText.LoadFromRenderedText("YOU WIN!", this->g_Font);
+	this->resultTextObj = GameObject(&this->resultText, &this->invadersViewport, NULL, (this->invadersViewport.w - this->resultText.getWidth()) / 2, (Game::SCREEN_HEIGHT - this->resultText.getHeight()) / 4);
+
+	this->resultTextObj.Draw();
+	this->scoreTextObj.Draw();
+
+	SDL_RenderPresent(this->g_Renderer);
+}
+
+void Game::DefeatScreen()
+{
+	SDL_RenderClear(this->g_Renderer);
+
+	this->resultText.setRenderer(this->g_Renderer);
+	this->resultText.LoadFromRenderedText("YOU LOSE!", this->g_Font);
+	this->resultTextObj = GameObject(&this->resultText, &this->invadersViewport, NULL, (this->invadersViewport.w - this->resultText.getWidth()) / 2, (Game::SCREEN_HEIGHT - this->resultText.getHeight()) / 4);
+
+	this->resultTextObj.Draw();
+	this->scoreTextObj.Draw();
+
+	SDL_RenderPresent(this->g_Renderer);
 }
 
 bool Game::Init()
@@ -173,6 +214,12 @@ bool Game::Init()
 		return false;
 	}
 
+	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+	{
+		printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+		return false;
+	}
+
 	return true;
 }
 
@@ -187,7 +234,42 @@ bool Game::LoadMedia()
 	this->g_Font = TTF_OpenFont("data/fonts/space_invaders.ttf", Game::GAME_INFO_FONT_SIZE);
 	if (this->g_Font == NULL)
 	{
-		printf("Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError());
+		printf("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+		return false;
+	}
+
+	this->invaderShoot = Mix_LoadWAV("data/sounds/InvaderBullet.wav");
+	if (this->invaderShoot == NULL)
+	{
+		printf("Failed to load sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return false;
+	}
+
+	this->invaderHit = Mix_LoadWAV("data/sounds/InvaderHit.wav");
+	if (this->invaderHit == NULL)
+	{
+		printf("Failed to load sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return false;
+	}
+
+	this->invadersMove = Mix_LoadWAV("data/sounds/InvadersMove.wav");
+	if (this->invadersMove == NULL)
+	{
+		printf("Failed to load sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return false;
+	}
+
+	this->playerShoot = Mix_LoadWAV("data/sounds/PlayerBullet.wav");
+	if (this->playerShoot == NULL)
+	{
+		printf("Failed to load sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		return false;
+	}
+
+	this->playerHit = Mix_LoadWAV("data/sounds/PlayerHit.wav");
+	if (this->playerHit == NULL)
+	{
+		printf("Failed to load sound effect! SDL_mixer Error: %s\n", Mix_GetError());
 		return false;
 	}
 
@@ -240,11 +322,13 @@ void Game::MoveLeft()
 
 void Game::PlayerShoot()
 {
+	Mix_PlayChannel(-1, this->playerShoot, 0);
 	this->projectiles.push_back(Projectile(&this->g_Texture, &this->projectileSrcRect, true, this->player.getX() + this->player.getWidth() / 2, this->playerViewport.y));
 }
 
 void Game::InvaderShoot(Invader *shooter)
 {
+	Mix_PlayChannel(-1, this->invaderShoot, 0);
 	this->projectiles.push_back(Projectile(&this->g_Texture, &this->projectileSrcRect, false, shooter->getX() + shooter->getWidth() / 2 + this->invadersViewport.x, this->invadersViewport.y + shooter->getY()));
 }
 
@@ -261,7 +345,7 @@ bool Game::AreColliding(Projectile *objA, Invader *objB)
 	bottomA = objA->getY() + objA->getHeight();
 
 	leftB = this->invadersViewport.x + objB->getX();
-	rightB = this->invadersViewport.x+ objB->getX() + objB->getWidth();
+	rightB = this->invadersViewport.x + objB->getX() + objB->getWidth();
 	topB = this->invadersViewport.y + objB->getY();
 	bottomB = this->invadersViewport.y + objB->getY() + objB->getHeight();
 
@@ -328,8 +412,19 @@ bool Game::AreColliding(Projectile *objA, Player *objB)
 	return true;
 }
 
-void Game::Update()
+bool Game::Update()
 {
+	if (this->invadersGrid.empty())
+	{
+		this->VictoryScreen();
+		return true;
+	}
+	if (this->player.getLives() == 0)
+	{
+		this->DefeatScreen();
+		return true;
+	}
+
 	for (size_t col = 0; col < this->invadersGrid.size(); ++col)
 	{
 		for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
@@ -348,6 +443,7 @@ void Game::Update()
 
 				if (this->AreColliding(&this->projectiles[i], &this->invadersGrid[col][row]))
 				{
+					Mix_PlayChannel(-1, this->invaderHit, 0);
 					this->player.KillInvader(&invadersGrid[col][row]);
 					this->updateInvoked = true;
 
@@ -362,6 +458,7 @@ void Game::Update()
 
 	if (this->timer.getTicks() > 500)
 	{
+		Mix_PlayChannel(-1, this->invadersMove, 0);
 		this->CheckGridStatus();
 		if (!this->movedDown)
 		{
@@ -369,6 +466,11 @@ void Game::Update()
 			{
 				for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
 				{
+					if (this->invadersGrid[col][row].isDead())
+					{
+						continue;
+					}
+
 					this->invadersGrid[col][row].setX(this->invadersGrid[col][row].getX() + this->invadersDirection * (Game::INVADER_WIDTH - Game::GAME_INFO_VIEWPORT_ITEMS_SPACE_WIDTH) / 2);
 					if (rand() % 100 < 1) // 1% chance for invader to shoot;
 					{
@@ -391,7 +493,7 @@ void Game::Update()
 
 		this->updateInvoked = false;
 	}
-	
+
 	for (int i = 0, size = this->projectiles.size(); i < size; ++i)
 	{
 		if (this->projectiles[i].getY() <= 0 || this->projectiles[i].getY() >= Game::SCREEN_HEIGHT)
@@ -404,6 +506,7 @@ void Game::Update()
 
 		if (!this->projectiles[i].isFriendly() && this->AreColliding(&this->projectiles[i], &this->player))
 		{
+			Mix_PlayChannel(-1, this->playerHit, 0);
 			this->player.Die();
 			this->updateInvoked = true;
 
@@ -417,6 +520,7 @@ void Game::Update()
 	}
 
 	this->Draw();
+	return false;
 }
 
 void Game::Draw()
@@ -441,7 +545,7 @@ void Game::Draw()
 
 	this->player.Draw();
 
-	for (int i = 0; i < this->projectiles.size(); ++i)
+	for (size_t i = 0; i < this->projectiles.size(); ++i)
 	{
 		this->projectiles[i].Draw();
 	}
@@ -499,7 +603,11 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		game.Update();
+		if (game.Update())
+		{
+			SDL_Delay(2500);
+			quit = true;
+		}
 	}
 
 	return 0;

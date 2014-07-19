@@ -1,8 +1,11 @@
 #pragma once
 
+#include <SDL_mixer.h>
+
 #include "Player.h"
 #include "Projectile.h"
 #include "Timer.h"
+
 #include "vector"
 
 class Game
@@ -12,6 +15,12 @@ private:
 	SDL_Rect playerLivesViewport;
 	SDL_Rect invadersViewport;
 	SDL_Rect playerViewport;
+
+	Mix_Chunk *invaderShoot;
+	Mix_Chunk *invaderHit;
+	Mix_Chunk *invadersMove;
+	Mix_Chunk *playerShoot;
+	Mix_Chunk *playerHit;
 
 	SDL_Window *g_Window;
 	SDL_Renderer *g_Renderer;
@@ -26,6 +35,9 @@ private:
 	Texture livesText;
 	GameObject livesTextObj;
 
+	Texture resultText;
+	GameObject resultTextObj;
+
 	std::vector<SDL_Rect> invaderTypes;
 	std::vector<std::vector<Invader>> invadersGrid;
 	int invadersDirection; // 1: right; -1: left;
@@ -39,6 +51,9 @@ private:
 	Timer timer;
 
 	void CheckGridStatus();
+
+	void VictoryScreen();
+	void DefeatScreen();
 
 public:
 	static const int SCREEN_WIDTH;
@@ -84,6 +99,6 @@ public:
 	bool AreColliding(Projectile *objA, Invader *objB);
 	bool AreColliding(Projectile *objA, Player *objB);
 
-	void Update();
+	bool Update();
 	void Draw();
 };

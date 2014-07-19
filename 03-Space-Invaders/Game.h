@@ -96,8 +96,7 @@ public:
 	void PlayerShoot();
 	void InvaderShoot(Invader *shooter);
 
-	bool AreColliding(Projectile *objA, Invader *objB);
-	bool AreColliding(Projectile *objA, Player *objB);
+	bool AreColliding(GameObject *objA, GameObject *objB);
 
 	bool Update();
 	void Draw();

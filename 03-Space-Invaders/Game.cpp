@@ -332,7 +332,7 @@ void Game::InvaderShoot(Invader *shooter)
 	this->projectiles.push_back(Projectile(&this->g_Texture, &this->projectileSrcRect, false, shooter->getX() + shooter->getWidth() / 2 + this->invadersViewport.x, this->invadersViewport.y + shooter->getY()));
 }
 
-bool Game::AreColliding(Projectile *objA, Invader *objB)
+bool Game::AreColliding(GameObject *objA, GameObject *objB)
 {
 	int leftA, leftB,
 		rightA, rightB,
@@ -344,50 +344,20 @@ bool Game::AreColliding(Projectile *objA, Invader *objB)
 	topA = objA->getY();
 	bottomA = objA->getY() + objA->getHeight();
 
-	leftB = this->invadersViewport.x + objB->getX();
-	rightB = this->invadersViewport.x + objB->getX() + objB->getWidth();
-	topB = this->invadersViewport.y + objB->getY();
-	bottomB = this->invadersViewport.y + objB->getY() + objB->getHeight();
-
-	if (bottomA <= topB)
+	if (typeid(*objB) == typeid(Invader))
 	{
-		return false;
+		leftB = this->invadersViewport.x + objB->getX();
+		rightB = this->invadersViewport.x + objB->getX() + objB->getWidth();
+		topB = this->invadersViewport.y + objB->getY();
+		bottomB = this->invadersViewport.y + objB->getY() + objB->getHeight();
 	}
-
-	if (topA >= bottomB)
+	else if (typeid(*objB) == typeid(Player))
 	{
-		return false;
+		leftB = this->playerViewport.x + objB->getX();
+		rightB = this->playerViewport.x + objB->getX() + objB->getWidth();
+		topB = this->playerViewport.y + objB->getY();
+		bottomB = this->playerViewport.y + objB->getY() + objB->getHeight();
 	}
-
-	if (rightA <= leftB)
-	{
-		return false;
-	}
-
-	if (leftA >= rightB)
-	{
-		return false;
-	}
-
-	return true;
-}
-
-bool Game::AreColliding(Projectile *objA, Player *objB)
-{
-	int leftA, leftB,
-		rightA, rightB,
-		topA, topB,
-		bottomA, bottomB;
-
-	leftA = objA->getX();
-	rightA = objA->getX() + objA->getWidth();
-	topA = objA->getY();
-	bottomA = objA->getY() + objA->getHeight();
-
-	leftB = objB->getX();
-	rightB = objB->getX() + objB->getWidth();
-	topB = this->playerViewport.y + objB->getY();
-	bottomB = this->playerViewport.y + objB->getY() + objB->getHeight();
 
 	if (bottomA <= topB)
 	{
@@ -423,6 +393,20 @@ bool Game::Update()
 	{
 		this->DefeatScreen();
 		return true;
+	}
+
+	for (int row = this->invadersGrid.front().size() - 1; row >= 0; --row)
+	{
+		if (!this->invadersGrid.front()[row].isDead()
+			&& (this->invadersViewport.y + this->invadersGrid.front()[row].getY() + Game::INVADER_HEIGHT >= this->playerViewport.y))
+		{
+			while (this->player.getLives() > 0)
+			{
+				Mix_PlayChannel(-1, this->playerHit, 0);
+				this->player.Die();
+			}
+		}
+
 	}
 
 	for (size_t col = 0; col < this->invadersGrid.size(); ++col)

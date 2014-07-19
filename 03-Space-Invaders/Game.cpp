@@ -46,10 +46,6 @@ Game::Game()
 	this->g_Window = NULL;
 	this->g_Renderer = NULL;
 	this->g_Font = NULL;
-
-	this->invadersDirection = 1;
-	this->movedDown = false;
-	this->updateInvoked = false;
 }
 
 Game::~Game()
@@ -149,7 +145,10 @@ void Game::VictoryScreen()
 	this->resultText.LoadFromRenderedText("YOU WIN!", this->g_Font);
 	this->resultTextObj = GameObject(&this->resultText, &this->invadersViewport, NULL, (this->invadersViewport.w - this->resultText.getWidth()) / 2, (Game::SCREEN_HEIGHT - this->resultText.getHeight()) / 4);
 
+	this->playAgainTextObj = GameObject(&this->playAgainText, &this->invadersViewport, NULL, (this->invadersViewport.w - this->playAgainText.getWidth()) / 2, (Game::SCREEN_HEIGHT - this->resultText.getHeight()) / 4 + this->resultText.getHeight());
+
 	this->resultTextObj.Draw();
+	this->playAgainTextObj.Draw();
 	this->scoreTextObj.Draw();
 
 	SDL_RenderPresent(this->g_Renderer);
@@ -163,7 +162,10 @@ void Game::DefeatScreen()
 	this->resultText.LoadFromRenderedText("YOU LOSE!", this->g_Font);
 	this->resultTextObj = GameObject(&this->resultText, &this->invadersViewport, NULL, (this->invadersViewport.w - this->resultText.getWidth()) / 2, (Game::SCREEN_HEIGHT - this->resultText.getHeight()) / 4);
 
+	this->playAgainTextObj = GameObject(&this->playAgainText, &this->invadersViewport, NULL, (this->invadersViewport.w - this->playAgainText.getWidth()) / 2, (Game::SCREEN_HEIGHT - this->resultText.getHeight()) / 4 + this->resultText.getHeight());
+
 	this->resultTextObj.Draw();
+	this->playAgainTextObj.Draw();
 	this->scoreTextObj.Draw();
 
 	SDL_RenderPresent(this->g_Renderer);
@@ -278,6 +280,13 @@ bool Game::LoadMedia()
 
 void Game::LoadScreen()
 {
+	this->invadersDirection = 1;
+	this->invadersMoveTime = 500;
+	this->movedDown = false;
+	this->updateInvoked = false;
+	this->projectiles.erase(this->projectiles.begin(), this->projectiles.end());
+	this->invadersGrid.erase(this->invadersGrid.begin(), this->invadersGrid.end());
+
 	for (int i = 0; i < this->g_Texture.getWidth(); i += Game::INVADER_WIDTH)
 	{
 		this->invaderTypes.push_back({ i, 0, Game::INVADER_WIDTH, Game::INVADER_HEIGHT });
@@ -306,6 +315,9 @@ void Game::LoadScreen()
 
 	this->livesText.LoadFromRenderedText("LIVES: " + std::to_string(this->player.getLives()), this->g_Font);
 	this->livesTextObj = GameObject(&this->livesText, &this->playerLivesViewport, NULL, Game::GAME_INFO_VIEWPORT_ITEMS_SPACE_WIDTH, (this->scoreInfoViewport.h - this->scoreText.getHeight()) / 2);
+
+	this->playAgainText.setRenderer(this->g_Renderer);
+	this->playAgainText.LoadFromRenderedText("PRESS SPACE TO PLAY AGAIN!", this->g_Font);
 
 	this->projectileSrcRect = { Game::PLAYER_WIDTH, Game::INVADER_HEIGHT, Game::PROJECTILE_WIDTH, Game::PROJECTILE_HEIGHT };
 }
@@ -395,6 +407,15 @@ bool Game::Update()
 		return true;
 	}
 
+	if (this->player.timer.isStarted())
+	{
+		if (this->player.timer.getTicks() > 100)
+		{
+			this->player.timer.Stop();
+			this->player.setTexture(&this->g_Texture);
+		}
+	}
+
 	for (size_t col = 0; col < this->invadersGrid.size(); ++col)
 	{
 		for (int row = this->invadersGrid[col].size() - 1; row >= 0; --row)
@@ -407,6 +428,7 @@ bool Game::Update()
 					Mix_PlayChannel(-1, this->playerHit, 0);
 					this->player.Die();
 				}
+				return false;
 			}
 
 		}
@@ -440,7 +462,7 @@ bool Game::Update()
 		}
 	}
 
-	if (this->timer.getTicks() > 500)
+	if (this->timer.getTicks() > this->invadersMoveTime)
 	{
 		Mix_PlayChannel(-1, this->invadersMove, 0);
 		this->CheckGridStatus();
@@ -450,12 +472,13 @@ bool Game::Update()
 			{
 				for (size_t row = 0; row < this->invadersGrid[col].size(); ++row)
 				{
+					this->invadersGrid[col][row].setX(this->invadersGrid[col][row].getX() + this->invadersDirection * (Game::INVADER_WIDTH - Game::GAME_INFO_VIEWPORT_ITEMS_SPACE_WIDTH) / 2);
+
 					if (this->invadersGrid[col][row].isDead())
 					{
 						continue;
 					}
 
-					this->invadersGrid[col][row].setX(this->invadersGrid[col][row].getX() + this->invadersDirection * (Game::INVADER_WIDTH - Game::GAME_INFO_VIEWPORT_ITEMS_SPACE_WIDTH) / 2);
 					if (rand() % 100 < 1) // 1% chance for invader to shoot;
 					{
 						this->InvaderShoot(&this->invadersGrid[col][row]);
@@ -466,6 +489,7 @@ bool Game::Update()
 		else
 		{
 			this->movedDown = false;
+			this->invadersMoveTime = std::max(this->invadersMoveTime - 30, 50);
 		}
 		this->timer.Start();
 	}
@@ -527,7 +551,10 @@ void Game::Draw()
 		}
 	}
 
-	this->player.Draw();
+	if (this->player.getTexture() != NULL)
+	{
+		this->player.Draw();
+	}
 
 	for (size_t i = 0; i < this->projectiles.size(); ++i)
 	{
@@ -562,7 +589,6 @@ int main(int argc, char *argv[])
 	{
 		while (SDL_PollEvent(&e) != 0)
 		{
-
 			if (e.type == SDL_QUIT)
 			{
 				quit = true;
@@ -589,8 +615,31 @@ int main(int argc, char *argv[])
 
 		if (game.Update())
 		{
-			SDL_Delay(2500);
-			quit = true;
+			bool screenQuit = false;
+			while (!screenQuit)
+			{
+				while (SDL_PollEvent(&e) != 0)
+				{
+					if (e.type == SDL_QUIT)
+					{
+						screenQuit = true;
+						quit = true;
+					}
+
+					if (e.type == SDL_KEYDOWN)
+					{
+						switch (e.key.keysym.sym)
+						{
+						case SDLK_SPACE:
+							game.LoadScreen();
+							game.Draw();
+							game.StartTimer();
+							screenQuit = true;
+							break;
+						}
+					}
+				}
+			}
 		}
 	}
 

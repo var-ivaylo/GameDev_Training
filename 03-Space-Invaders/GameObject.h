@@ -32,6 +32,8 @@ public:
 
 	Texture *getTexture() { return this->m_Texture; }
 
+	void setTexture(Texture *texture) { this->m_Texture = texture; }
+
 	SDL_Rect *getClip() { return this->m_Clip; }
 
 	void Draw();

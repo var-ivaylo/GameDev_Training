@@ -37,10 +37,13 @@ private:
 
 	Texture resultText;
 	GameObject resultTextObj;
+	Texture playAgainText;
+	GameObject playAgainTextObj;
 
 	std::vector<SDL_Rect> invaderTypes;
 	std::vector<std::vector<Invader>> invadersGrid;
 	int invadersDirection; // 1: right; -1: left;
+	int invadersMoveTime;
 	bool movedDown;
 
 	bool updateInvoked;
@@ -89,6 +92,7 @@ public:
 	void LoadScreen();
 
 	void StartTimer() { this->timer.Start(); }
+	uint32_t getTicks() { return this->timer.getTicks(); }
 
 	void MoveRight();
 	void MoveLeft();

@@ -22,5 +22,8 @@ void Player::KillInvader(Invader *invader)
 
 void Player::Die()
 {
+	this->timer.Start();
+	this->setTexture(NULL);
+
 	this->lives--;
 }
